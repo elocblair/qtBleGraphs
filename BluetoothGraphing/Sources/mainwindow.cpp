@@ -157,8 +157,8 @@ void MainWindow::receiveReading(QVector<double> values)
     //ypos.push_back(values.at(1));
     zpos.push_back(values.at(xcount + ycount+2));
     xant.push_back(values.at(xcount + ycount+3));
-    yant.push_back(values.at(xcount + ycount+4));
-    zant.push_back(values.at(xcount + ycount+5));
+    yant.push_back(values.at(xcount + ycount+7));
+    zant.push_back(values.at(xcount + ycount+8));
     /*xvec.push_back(values.at(6));
     yvec.push_back(values.at(7));
     zvec.push_back(values.at(8));*/
@@ -360,11 +360,11 @@ void MainWindow::initializePlots()
 
     panty = ui->anteriorY;
     panty->setAxisAutoScale(QwtPlot::yLeft, false);
-    panty->setAxisScale(QwtPlot::yLeft, -200,200,25);
+    panty->setAxisScale(QwtPlot::yLeft, 0,50,5);
     panty->setAxisScale(QwtPlot::xBottom, 0, showSamplesCount, 100);
     panty->setAxisTitle(QwtPlot::yLeft, "G");
     antYCurve = new QwtPlotCurve();
-    panty->setTitle("ADXL1");
+    panty->setTitle("ADXL2");
     antYCurve->setPen(Qt::black, 1);
     brush.setColor(Qt::black);
     brush.setStyle(Qt::SolidPattern);
@@ -374,12 +374,12 @@ void MainWindow::initializePlots()
 
     pantz = ui->anteriorZ;
     pantz->setAxisAutoScale(QwtPlot::yLeft, false);
-    pantz->setAxisScale(QwtPlot::yLeft, -200, 200, 25);
+    pantz->setAxisScale(QwtPlot::yLeft, 0, 50, 5);
     pantz->setAxisScale(QwtPlot::xBottom, 0, showSamplesCount, 100);
     pantz->setAxisTitle(QwtPlot::yLeft, "G");
 
     antZCurve = new QwtPlotCurve();
-    pantz->setTitle("ADXL2");
+    pantz->setTitle("ADXL1");
     antZCurve->setPen(Qt::blue, 1);
     brush.setColor(Qt::blue);
     brush.setStyle(Qt::SolidPattern);

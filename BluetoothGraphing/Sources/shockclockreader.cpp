@@ -150,8 +150,8 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
             short gz = (char1.at(13) << 8) | (char1.at(12) & 0xff);
 
             short gx2 = (char1.at(15) << 8) | (char1.at(14) & 0xff);
-            short gy2 = (char1.at(7) << 8) | (char1.at(6) & 0xff);
-            short gz2 = (char1.at(5) << 8) | (char1.at(4) & 0xff);
+            short gy2 = (char1.at(6) << 8) | (char1.at(7) & 0xff);
+            short gz2 = (char1.at(4) << 8) | (char1.at(5) & 0xff);
 
 
             double azScaled, gxScaled, gyScaled, gzScaled, gx2Scaled, gy2Scaled, gz2Scaled;
@@ -165,6 +165,7 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
             gx2Scaled = ((double)gx2)*0.00111;
             gy2Scaled = ((double)gy2)*0.049;
             gz2Scaled = ((double)gz2)*0.049;
+            //qDebug() << gy2Scaled << gz2Scaled;
             double sizeX = (double)doubleValuesX.size();
             double sizeY = (double)doubleValuesY.size();
             values.clear();
