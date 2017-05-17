@@ -74,7 +74,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     pressedKey = event->key();
     pressedKey += "\r\n";
 }
-
+QVector<double> hitAntGyro;
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -82,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     qRegisterMetaType<QVector<double> >("QVector<double>");
     ui->setupUi(this);
+    hitAntGyro.push_front(0);
     serial = new QSerialPort;
     serial->setPortName("COM3");
     serial->setBaudRate(9600);
@@ -135,19 +136,16 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-double previousMainGyro, previousAntGyro, previousMotor,previousEncoder = 0;
-QVector<double> gyro;
-QVector<double> encoder;
-bool hitGyro = false;
-bool hitEncoder = false;
-int hitEncoderCount = 0;
-int hitGyroCount = 0;
+
+bool isGyro = false;
+int gyroCount = 0;
+
 void MainWindow::receiveReading(QVector<double> values)
 {
     int xcount = 0;
     int ycount = 0;
 
-    for(xcount; xcount < (int)values.at(0); xcount++){
+   /* for(xcount; xcount < (int)values.at(0); xcount++){
 
         if((values.at(xcount+2)<36) & (values.at(xcount+2)>-36) ){
             motorEncoder.push_back(values.at(xcount+2));
@@ -179,7 +177,7 @@ void MainWindow::receiveReading(QVector<double> values)
         }
     }
 
-    mainGyro.push_back(values.at(xcount + ycount+2));
+
     if((previousAntGyro < (values.at(xcount+ycount+3)-6)) | (previousAntGyro > (values.at(xcount+ycount+3)+6))){
         hitGyro = true;
     }
@@ -193,9 +191,33 @@ void MainWindow::receiveReading(QVector<double> values)
             hitGyroCount = 0;
             qDebug() << "gyro hit " << gyro;
         }
-    }
+    }*/
+    mainGyro.push_back(values.at(xcount + ycount+2));
     anteriorGyro.push_back(values.at(xcount + ycount+3));
-    previousAntGyro = values.at(xcount +ycount+3);
+    //hitAntGyro.push_back(values.at(3));
+   // if(hitAntGyro.size() > 1){
+        if((abs(hitAntGyro.at(0) - values.at(3))) >5 ){
+            isGyro = true;
+        }
+        if(isGyro){
+            hitAntGyro.push_back(values.at(3));
+            gyroCount++;
+        }else{
+            hitAntGyro.push_back(values.at(3));
+            qDebug() << hitAntGyro;
+            hitAntGyro.removeFirst();
+        }
+        if(gyroCount > 10){
+            //FIND GREATEST AND LEAST VALUES HERE
+            qDebug() << hitAntGyro;
+            hitAntGyro.clear();
+            hitAntGyro.push_front(0);
+            gyroCount = 0;
+            isGyro = false;
+        }
+    //}
+
+    //previousAntGyro = values.at(xcount +ycount+3);
     anteriorADXL.push_back(values.at(xcount + ycount+7));
     mainADXL.push_back(values.at(xcount + ycount+8));
 
@@ -211,7 +233,7 @@ void MainWindow::receiveReading(QVector<double> values)
         pressedKey = "";
     }
     //make sure that there aren't too many values
-    while(motorEncoder.size() > showSamplesCount)
+   /* while(motorEncoder.size() > showSamplesCount)
     {
         motorEncoder.pop_front();
 
@@ -219,7 +241,7 @@ void MainWindow::receiveReading(QVector<double> values)
     while(freeEncoder.size() > showSamplesCount)
     {
         freeEncoder.pop_front();
-    }
+    }*/
     while(mainGyro.size() > showSamplesCount)
     {
         mainGyro.pop_front();
@@ -239,8 +261,8 @@ void MainWindow::receiveReading(QVector<double> values)
     }
 
 
-    posX.clear();
-    posY.clear();
+   // posX.clear();
+   // posY.clear();
     posZ.clear();
 
     antX.clear();
@@ -249,14 +271,14 @@ void MainWindow::receiveReading(QVector<double> values)
 
 
 
-    for(int i = 0; i < motorEncoder.size(); i ++){
+ /*   for(int i = 0; i < motorEncoder.size(); i ++){
         posX << QPointF(i, motorEncoder.at(i));
     }
 
     for(int i = 0; i < freeEncoder.size(); i++){
         posY << QPointF(i, freeEncoder.at(i));
     }
-
+*/
     for(int i = 0; i < mainGyro.size(); i++){
         posZ << QPointF(i, mainGyro.at(i));
     }
@@ -272,16 +294,16 @@ void MainWindow::receiveReading(QVector<double> values)
     //set the vaues for the posterior
 
 
-    posXCurve->setSamples(posX);
-    posYCurve->setSamples(posY);
+    //posXCurve->setSamples(posX);
+    //posYCurve->setSamples(posY);
     posZCurve->setSamples(posZ);
 
     antXCurve->setSamples(antX);
     antYCurve->setSamples(antY);
     antZCurve->setSamples(antZ);
 
-    pposx->replot();
-    pposy->replot();
+    //pposx->replot();
+    //pposy->replot();
     pposz->replot();
 
     pantx->replot();
@@ -392,31 +414,89 @@ void MainWindow::initializePlots()
 }
 bool dataFlag = true;
 QByteArray dataPrev;
+QVector<double>hitEncoder;
+bool isEnc = false;
+int EncCount = 0;
+
+double motorVal;
+double encVal;
 void MainWindow::ready2read(){
     QByteArray data;
     if(dataFlag){
        data = serial->readAll();
        dataFlag = false;
        data.clear();
+       hitEncoder.push_front(0);
+       //hitEncoder.push_front(0);
     }
     else{
         data = serial->readLine();
         dataPrev.push_back(data);
         data = dataPrev;
         if(data.at(data.size()-1)==10){
-            qDebug() << data;
+            //qDebug() << data;
             dataPrev.clear();
+            if(data.at(0) == 120){
+                data.remove(0,1);
+                data.remove(data.size()-1,1);
+                motorVal = data.toDouble();
+                motorEncoder.push_back(motorVal);
+                while(motorEncoder.size() > showSamplesCount)
+                {
+                    motorEncoder.pop_front();
+                }
+                posX.clear();
+                for(int i = 0; i < motorEncoder.size(); i ++){
+                    posX << QPointF(i, motorEncoder.at(i));
+                }
+                posXCurve->setSamples(posX);
+                pposx->replot();
+                //qDebug() << motorVal;
+
+            }
+            if(data.at(0)==121){
+                data.remove(0,1);
+                data.remove(data.size()-1,1);
+                encVal = data.toDouble();
+                freeEncoder.push_back(encVal);
+                while(freeEncoder.size() > showSamplesCount)
+                {
+                    freeEncoder.pop_front();
+                }
+                posY.clear();
+                for(int i = 0; i < freeEncoder.size(); i++){
+                    posY << QPointF(i, freeEncoder.at(i));
+                }
+                posYCurve->setSamples(posY);
+                pposy->replot();
+                //qDebug() << encVal;
+
+                if((abs(hitEncoder.at(0) - encVal)) > 5){
+                    isEnc = true;
+                }
+                if(isEnc){
+                    hitEncoder.push_back(encVal);
+                    EncCount++;
+                }else{
+                    hitEncoder.push_back(encVal);
+                    //qDebug() << hitEncoder;
+                    hitEncoder.removeFirst();
+                }
+                if(EncCount > 10){
+                    //FIND GREATEST VALUE HERE
+                    //qDebug() << hitEncoder;
+                    hitEncoder.clear();
+                    hitEncoder.push_front(0);
+                    EncCount = 0;
+                    isEnc = false;
+                }
+            }
         }
         else{
             dataPrev = data;
         }
 
     }
-
-    readData.push_back(data);
-    QStringList splitData = readData.split(10);
-
-    //qDebug() << splitData.at(2).toLatin1().size();
 
 }
 
