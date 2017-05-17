@@ -81,7 +81,13 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     qRegisterMetaType<QVector<double> >("QVector<double>");
-
+    ui->setupUi(this);
+    serial = new QSerialPort;
+    serial->setPortName("COM3");
+    serial->setBaudRate(9600);
+    if(!serial->isOpen()){
+        serial->open(QIODevice::ReadWrite);
+    }
 
     //thread for the shockClockReader
     scThread = new QThread();
@@ -92,6 +98,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(scThread, SIGNAL(finished()), reader, SLOT(deleteLater()));
     QObject::connect(reader, SIGNAL(newValues(QVector<double>)), this, SLOT(receiveReading(QVector<double>)));
     QObject::connect(ui->saveData, SIGNAL(released()), this, SLOT(saveData()));
+    QObject::connect(serial,SIGNAL(readyRead()), this, SLOT(ready2read()));
     reader->moveToThread(scThread);
     scThread->start();
     scThread->setPriority(QThread::HighestPriority);
@@ -383,6 +390,33 @@ void MainWindow::initializePlots()
     antZCurve->setSamples(antZ);
 
 }
+bool dataFlag = true;
+QByteArray dataPrev;
+void MainWindow::ready2read(){
+    QByteArray data;
+    if(dataFlag){
+       data = serial->readAll();
+       dataFlag = false;
+       data.clear();
+    }
+    else{
+        data = serial->readLine();
+        dataPrev.push_back(data);
+        data = dataPrev;
+        if(data.at(data.size()-1)==10){
+            qDebug() << data;
+            dataPrev.clear();
+        }
+        else{
+            dataPrev = data;
+        }
 
+    }
 
+    readData.push_back(data);
+    QStringList splitData = readData.split(10);
+
+    //qDebug() << splitData.at(2).toLatin1().size();
+
+}
 

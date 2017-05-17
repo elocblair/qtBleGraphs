@@ -9,6 +9,7 @@
 #include <QThread>
 #include <QFile>
 #include <QTextEdit>
+#include <QtSerialPort/QSerialPort>
 namespace Ui {
 class MainWindow;
 }
@@ -22,6 +23,8 @@ public:
     ~MainWindow();
     void initializePlots();
     QTextEdit *gyronum;
+    QSerialPort* serial;
+    QString readData;
     //variables
     QPolygonF posX, posY, posZ, antX, antY, antZ, vecX, vecY, vecZ;
     QwtPlotCurve *posXCurve, *posYCurve, *posZCurve, *antXCurve, *antYCurve, *antZCurve, *vecXCurve, *vecYCurve, *vecZCurve;
@@ -40,6 +43,7 @@ private:
 public slots:
     void receiveReading(QVector<double> values);
     void saveData();
+    void ready2read();
 protected:
     void keyPressEvent(QKeyEvent *event);
 

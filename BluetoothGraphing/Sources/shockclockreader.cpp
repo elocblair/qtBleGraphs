@@ -44,11 +44,11 @@ double previousDoubleMotor=0;
 void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context)
 {
     //QList<QSerialPortInfo> ports =  info.availablePorts();
-    selfReference->serialPort->setPortName("COM3");
+   /* selfReference->serialPort->setPortName("COM3");
     selfReference->serialPort->setBaudRate(QSerialPort::Baud9600);
     if(!selfReference->serialPort->isOpen()){
         selfReference->serialPort->open(QIODevice::ReadWrite);
-    }
+    }*/
     QVector<double> values;
     QVector<double> motorEncoder, freeEncoder;
     //printf("notification obtained ");
@@ -69,7 +69,7 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
        // qDebug() << char1.size();
         if (char1.size()>15){
 
-            if(selfReference->serialPort->waitForReadyRead(1)){
+            /*if(selfReference->serialPort->waitForReadyRead(1)){
                 QByteArray numberRead;
                 numberRead = selfReference->serialPort->readAll();
                 QByteArray currentNumX,currentNumY;
@@ -144,7 +144,7 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
                     }
 
                 }
-            }
+            }*/
             short anteriorGY = (char1.at(17) << 8) | (char1.at(16) & 0xff);
 
             short mainGX = (char1.at(9) << 8) | (char1.at(8) & 0xff);
