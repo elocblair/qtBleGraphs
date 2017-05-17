@@ -39,6 +39,8 @@ namespace util
     }
 }
 ShockClockReader *selfReference;
+double previousDoubleEnc=0;
+double previousDoubleMotor=0;
 void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context)
 {
     //QList<QSerialPortInfo> ports =  info.availablePorts();
@@ -48,7 +50,7 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
         selfReference->serialPort->open(QIODevice::ReadWrite);
     }
     QVector<double> values;
-    QVector<double> doubleValuesX, doubleValuesY;
+    QVector<double> motorEncoder, freeEncoder;
     //printf("notification obtained ");
     PBLUETOOTH_GATT_VALUE_CHANGED_EVENT ValueChangedEventParameters = (PBLUETOOTH_GATT_VALUE_CHANGED_EVENT)EventOutParameter;
     QVector<UCHAR> char1;
@@ -72,24 +74,24 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
                 numberRead = selfReference->serialPort->readAll();
                 QByteArray currentNumX,currentNumY;
 
-
-                qDebug() << numberRead;
+                //qDebug() << numberRead;
                 int flag = 2;
                 for( int i = 0; i < numberRead.size(); i++){
                     char temp = numberRead.at(i);
                     if(i == (numberRead.size() - 1)){
                         if(flag == 1){
                             currentNumY.push_back(numberRead.at(i));
-                            double currentDub = QString::fromLatin1(currentNumY).indexOf('.') > -1 ? currentNumY.toDouble() : 0.0;
-                            qDebug() << "y serial data: " << currentDub << "\n";
-
-                            doubleValuesY.push_back(currentDub);
+                            double currentDub = QString::fromLatin1(currentNumY).indexOf('.') > -1 ? currentNumY.toDouble() : previousDoubleEnc;
+                            //qDebug() << "y serial data: " << currentDub << "\n";
+                            previousDoubleEnc = currentDub;
+                            freeEncoder.push_back(currentDub);
                         }
                         if(flag == 0){
                             currentNumX.push_back(numberRead.at(i));
-                            double currentDub = QString::fromLatin1(currentNumX).indexOf('.') > -1 ? currentNumX.toDouble() : 0.0;
-                            qDebug() << "x serial data: " << currentDub << "\n";
-                            doubleValuesX.push_back(currentDub);
+                            double currentDub = QString::fromLatin1(currentNumX).indexOf('.') > -1 ? currentNumX.toDouble() : previousDoubleMotor;
+                            //qDebug() << "x serial data: " << currentDub << "\n";
+                            previousDoubleMotor = currentDub;
+                            motorEncoder.push_back(currentDub);
                         }
                     }
                     if(temp > 130){
@@ -99,9 +101,9 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
                     if (temp == 120){
                         //m
                         if(currentNumY.size() != 0){
-                            double currentDub = QString::fromLatin1(currentNumY).indexOf('.') > -1 ? currentNumY.toDouble() : 0.0;                            //values.at(1) = currentDub;
-                            qDebug() << "y serial data: " << currentDub << "\n";
-                            doubleValuesY.push_back(currentDub);
+                            double currentDub = QString::fromLatin1(currentNumY).indexOf('.') > -1 ? currentNumY.toDouble() : previousDoubleEnc;                            //values.at(1) = currentDub;
+                           // qDebug() << "y serial data: " << currentDub << "\n";
+                            freeEncoder.push_back(currentDub);
                             currentNumY.clear();
                         }
                         flag = 0;
@@ -109,9 +111,9 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
                     if (temp == 121){
                         //make double
                         if(currentNumX.size() != 0){
-                            double currentDub = QString::fromLatin1(currentNumX).indexOf('.') > -1 ? currentNumX.toDouble() : 0.0;                            //values.at(0) = currentDub;
-                            qDebug() << "x serial data: " << currentDub << "\n";
-                            doubleValuesX.push_back(currentDub);
+                            double currentDub = QString::fromLatin1(currentNumX).indexOf('.') > -1 ? currentNumX.toDouble() : previousDoubleMotor;                            //values.at(0) = currentDub;
+                            //qDebug() << "x serial data: " << currentDub << "\n";
+                            motorEncoder.push_back(currentDub);
                             currentNumX.clear();
                         }
                         flag = 1;
@@ -143,45 +145,45 @@ void HandleBLENotification(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParam
 
                 }
             }
-            short az = (char1.at(3) << 8) | (char1.at(2) & 0xff);
+            short anteriorGY = (char1.at(17) << 8) | (char1.at(16) & 0xff);
 
-            short gx = (char1.at(9) << 8) | (char1.at(8) & 0xff);
-            short gy = (char1.at(11) << 8) | (char1.at(10) & 0xff);
-            short gz = (char1.at(13) << 8) | (char1.at(12) & 0xff);
+            short mainGX = (char1.at(9) << 8) | (char1.at(8) & 0xff);
+            short mainGY = (char1.at(11) << 8) | (char1.at(10) & 0xff);
+            short mainGZ = (char1.at(13) << 8) | (char1.at(12) & 0xff);
 
-            short gx2 = (char1.at(15) << 8) | (char1.at(14) & 0xff);
-            short gy2 = (char1.at(6) << 8) | (char1.at(7) & 0xff);
-            short gz2 = (char1.at(4) << 8) | (char1.at(5) & 0xff);
+            short anteriorGX = (char1.at(15) << 8) | (char1.at(14) & 0xff);
+            short anteriorADXL = (char1.at(6) << 8) | (char1.at(7) & 0xff);
+            short mainADXL = (char1.at(4) << 8) | (char1.at(5) & 0xff);
 
 
-            double azScaled, gxScaled, gyScaled, gzScaled, gx2Scaled, gy2Scaled, gz2Scaled;
+            double anteriorGyroY, mainGyroX, mainGyroY, mainGyroZ, anteriorGyroX, anteriorADXLvector, mainADXLvector;
 
-            azScaled = ((double)az)*0.00111;
+            anteriorGyroY = ((double)anteriorGY)*0.00111;
 
-            gxScaled = ((double)gx)*0.00111;
-            gyScaled = ((double)gy)*0.00111;
-            gzScaled = ((double)gz)*0.00111;
+            mainGyroX = ((double)mainGX)*0.00111;
+            mainGyroY = ((double)mainGY)*0.00111;
+            mainGyroZ = ((double)mainGZ)*0.00111;
 
-            gx2Scaled = ((double)gx2)*0.00111;
-            gy2Scaled = ((double)gy2)*0.049;
-            gz2Scaled = ((double)gz2)*0.049;
+            anteriorGyroX = ((double)anteriorGX)*0.00111;
+            anteriorADXLvector = ((double)anteriorADXL)*0.049;
+            mainADXLvector = ((double)mainADXL)*0.049;
             //qDebug() << gy2Scaled << gz2Scaled;
-            double sizeX = (double)doubleValuesX.size();
-            double sizeY = (double)doubleValuesY.size();
+            double sizeX = (double)motorEncoder.size();
+            double sizeY = (double)freeEncoder.size();
             values.clear();
             values << sizeX << sizeY;
-            if(doubleValuesX.size() != 0){
-                //qDebug() "before\n" << doubleValuesX << doubleValuesY;
+            if(motorEncoder.size() != 0){
+                //qDebug() << "before\n" << doubleValuesX << doubleValuesY;
             }
 
             for (int i = 0; i < sizeX; i++){
-                values << doubleValuesX.at(i);
+                values << motorEncoder.at(i);
             }
             for(int i = 0; i < sizeY; i++){
-                values << doubleValuesY.at(i);
+                values << freeEncoder.at(i);
             }
             //qDebug() << values;
-            values << azScaled  << gxScaled  << gyScaled  << gzScaled << gx2Scaled  << gy2Scaled  << gz2Scaled;
+            values << anteriorGyroY  << mainGyroX  << mainGyroY  << mainGyroZ << anteriorGyroX  << anteriorADXLvector  << mainADXLvector;
             //readShockClock();
             emit selfReference->newValues(values);
 

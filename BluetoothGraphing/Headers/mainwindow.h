@@ -26,7 +26,7 @@ public:
     QPolygonF posX, posY, posZ, antX, antY, antZ, vecX, vecY, vecZ;
     QwtPlotCurve *posXCurve, *posYCurve, *posZCurve, *antXCurve, *antYCurve, *antZCurve, *vecXCurve, *vecYCurve, *vecZCurve;
     QwtPlot *pposx, *pposy, *pposz, *pantx, *panty, *pantz, *pvecx, *pvecy, *pvecz;
-    QVector<double> xpos, ypos, zpos, xant, yant, zant, xvec, yvec, zvec;
+    QVector<double> motorEncoder, freeEncoder, mainGyro, anteriorGyro, anteriorADXL, mainADXL, xvec, yvec, zvec;
     ShockClockReader *reader;
     QThread *scThread;
     int showSamplesCount;

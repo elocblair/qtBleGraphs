@@ -128,7 +128,13 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-
+double previousMainGyro, previousAntGyro, previousMotor,previousEncoder = 0;
+QVector<double> gyro;
+QVector<double> encoder;
+bool hitGyro = false;
+bool hitEncoder = false;
+int hitEncoderCount = 0;
+int hitGyroCount = 0;
 void MainWindow::receiveReading(QVector<double> values)
 {
     int xcount = 0;
@@ -137,8 +143,8 @@ void MainWindow::receiveReading(QVector<double> values)
     for(xcount; xcount < (int)values.at(0); xcount++){
 
         if((values.at(xcount+2)<36) & (values.at(xcount+2)>-36) ){
-            xpos.push_back(values.at(xcount+2));
-           // qDebug() << "x data: " << xpos.at(xcount);
+            motorEncoder.push_back(values.at(xcount+2));
+            //qDebug() << "motor data: " << values.at(xcount + 2);
         }
     }
     //qDebug() << "x\n " << xpos;
@@ -146,22 +152,47 @@ void MainWindow::receiveReading(QVector<double> values)
         int index = xcount+ycount+2;
 
         if( (values.at(index) < 36) & (values.at(index) > -36)){
-
-            ypos.push_back(values.at(index));
-            //qDebug() << "y data: " << ypos.at(ycount) << "\n";
+            if((previousEncoder < (values.at(index) - 10)) | (previousEncoder > (values.at(index)+10))){
+                hitEncoder = true;
+            }
+            if(hitEncoder){
+                hitEncoderCount++;
+                if(hitEncoderCount < 10){
+                    encoder.push_back(values.at(index));
+                }
+                else{
+                    hitEncoder = false;
+                    hitEncoderCount = 0;
+                    qDebug() << "encoder hit " << encoder;
+                }
+            }
+            freeEncoder.push_back(values.at(index));
+            previousEncoder = values.at(index);
+            //qDebug() << "encoder data: " << values.at(index) << "\n";
         }
     }
-    //qDebug() << "y\n " << ypos;
-    //qDebug() << values.size();
-    //xpos.push_back(values.at(0));
-    //ypos.push_back(values.at(1));
-    zpos.push_back(values.at(xcount + ycount+2));
-    xant.push_back(values.at(xcount + ycount+3));
-    yant.push_back(values.at(xcount + ycount+7));
-    zant.push_back(values.at(xcount + ycount+8));
-    /*xvec.push_back(values.at(6));
-    yvec.push_back(values.at(7));
-    zvec.push_back(values.at(8));*/
+
+    mainGyro.push_back(values.at(xcount + ycount+2));
+    if((previousAntGyro < (values.at(xcount+ycount+3)-6)) | (previousAntGyro > (values.at(xcount+ycount+3)+6))){
+        hitGyro = true;
+    }
+    if(hitGyro){
+        hitGyroCount++;
+        if(hitGyroCount < 10){
+            gyro.push_back(values.at(xcount+ycount+3));
+        }
+        else{
+            hitGyro = false;
+            hitGyroCount = 0;
+            qDebug() << "gyro hit " << gyro;
+        }
+    }
+    anteriorGyro.push_back(values.at(xcount + ycount+3));
+    previousAntGyro = values.at(xcount +ycount+3);
+    anteriorADXL.push_back(values.at(xcount + ycount+7));
+    mainADXL.push_back(values.at(xcount + ycount+8));
+
+    //qDebug() << "values " << values.at(xcount+ycount+2) << ", " << values.at(xcount+ycount+3);
 
     if(recording == true)
     {
@@ -173,45 +204,34 @@ void MainWindow::receiveReading(QVector<double> values)
         pressedKey = "";
     }
     //make sure that there aren't too many values
-    while(xpos.size() > showSamplesCount)
+    while(motorEncoder.size() > showSamplesCount)
     {
-        xpos.pop_front();
+        motorEncoder.pop_front();
 
     }
-    while(ypos.size() > showSamplesCount)
+    while(freeEncoder.size() > showSamplesCount)
     {
-        ypos.pop_front();
+        freeEncoder.pop_front();
     }
-    while(zpos.size() > showSamplesCount)
+    while(mainGyro.size() > showSamplesCount)
     {
-        zpos.pop_front();
-    }
-
-    while(xant.size() > showSamplesCount)
-    {
-        xant.pop_front();
-    }
-    while(yant.size() > showSamplesCount)
-    {
-        yant.pop_front();
-    }
-    while(zant.size() > showSamplesCount)
-    {
-        zant.pop_front();
+        mainGyro.pop_front();
     }
 
-    /*while(xvec.size() > showSamplesCount)
+    while(anteriorGyro.size() > showSamplesCount)
     {
-        xvec.pop_front();
+        anteriorGyro.pop_front();
     }
-    while(yvec.size() > showSamplesCount)
+    while(anteriorADXL.size() > showSamplesCount)
     {
-        yvec.pop_front();
+        anteriorADXL.pop_front();
     }
-    while(zvec.size() > showSamplesCount)
+    while(mainADXL.size() > showSamplesCount)
     {
-        zvec.pop_front();
-    }*/
+        mainADXL.pop_front();
+    }
+
+
     posX.clear();
     posY.clear();
     posZ.clear();
@@ -220,41 +240,27 @@ void MainWindow::receiveReading(QVector<double> values)
     antY.clear();
     antZ.clear();
 
-   /* vecX.clear();
-    vecY.clear();
-    vecZ.clear();*/
 
-    for(int i = 0; i < xpos.size(); i ++)
-    {
 
-        posX << QPointF(i, xpos.at(i));
-        //posY << QPointF(i, ypos.at(i));
-        //posZ << QPointF(i, zpos.at(i));
-
-        //antX << QPointF(i, xant.at(i));
-        //antY << QPointF(i, yant.at(i));
-        //antZ << QPointF(i, zant.at(i));
-
-        /*vecX << QPointF(i, xvec.at(i));
-        vecY << QPointF(i, yvec.at(i));
-        vecZ << QPointF(i, zvec.at(i));*/
+    for(int i = 0; i < motorEncoder.size(); i ++){
+        posX << QPointF(i, motorEncoder.at(i));
     }
 
-    for(int i = 0; i < ypos.size(); i++){
-        posY << QPointF(i, ypos.at(i));
+    for(int i = 0; i < freeEncoder.size(); i++){
+        posY << QPointF(i, freeEncoder.at(i));
     }
 
-    for(int i = 0; i < zpos.size(); i++){
-        posZ << QPointF(i, zpos.at(i));
+    for(int i = 0; i < mainGyro.size(); i++){
+        posZ << QPointF(i, mainGyro.at(i));
     }
-    for(int i = 0; i < xant.size(); i++){
-        antX << QPointF(i, xant.at(i));
+    for(int i = 0; i < anteriorGyro.size(); i++){
+        antX << QPointF(i, anteriorGyro.at(i));
     }
-    for(int i = 0; i < yant.size(); i++){
-        antY << QPointF(i, yant.at(i));
+    for(int i = 0; i < anteriorADXL.size(); i++){
+        antY << QPointF(i, anteriorADXL.at(i));
     }
-    for(int i = 0; i < zant.size(); i++){
-        antZ << QPointF(i, zant.at(i));
+    for(int i = 0; i < mainADXL.size(); i++){
+        antZ << QPointF(i, mainADXL.at(i));
     }
     //set the vaues for the posterior
 
@@ -267,10 +273,6 @@ void MainWindow::receiveReading(QVector<double> values)
     antYCurve->setSamples(antY);
     antZCurve->setSamples(antZ);
 
-    /*vecXCurve->setSamples(vecX);
-    vecYCurve->setSamples(vecY);
-    vecZCurve->setSamples(vecZ);*/
-
     pposx->replot();
     pposy->replot();
     pposz->replot();
@@ -278,12 +280,6 @@ void MainWindow::receiveReading(QVector<double> values)
     pantx->replot();
     panty->replot();
     pantz->replot();
-
-   /* pvecx->replot();
-    pvecy->replot();
-    pvecz->replot();*/
-
-
 }
 
 
@@ -292,7 +288,6 @@ void MainWindow::initializePlots()
 
     QBrush brush;
     gyronum = ui->gyroDifference;
-
 
     //posterior
     pposx = ui->posteriorX;
@@ -330,10 +325,10 @@ void MainWindow::initializePlots()
     pposz->setAxisAutoScale(QwtPlot::yLeft, false);
     pposz->setAxisScale(QwtPlot::yLeft, -35, 35, 7);
     pposz->setAxisScale(QwtPlot::xBottom, 0, showSamplesCount, 100);
-    pposz->setAxisTitle(QwtPlot::yLeft, "radians/s");
+    pposz->setAxisTitle(QwtPlot::yLeft, "rad/s");
 
     posZCurve = new QwtPlotCurve();
-    pposz->setTitle("Gyro Difference");
+    pposz->setTitle("Gyro Main");
     posZCurve->setPen(Qt::blue, 1);
     brush.setColor(Qt::blue);
     brush.setStyle(Qt::SolidPattern);
@@ -348,9 +343,9 @@ void MainWindow::initializePlots()
     pantx->setAxisAutoScale(QwtPlot::yLeft, false);
     pantx->setAxisScale(QwtPlot::yLeft, -35,35,7);
     pantx->setAxisScale(QwtPlot::xBottom, 0, showSamplesCount, 100);
-    pantx->setAxisTitle(QwtPlot::yLeft, "radians/s");
+    pantx->setAxisTitle(QwtPlot::yLeft, "rad/s");
     antXCurve = new QwtPlotCurve();
-    pantx->setTitle("Gyro");
+    pantx->setTitle("Gyro Anterior");
     antXCurve->setPen(Qt::red, 1);
     brush.setColor(Qt::red);
     brush.setStyle(Qt::SolidPattern);
@@ -386,52 +381,6 @@ void MainWindow::initializePlots()
     antZCurve->setBrush(brush);
     antZCurve->attach(pantz);
     antZCurve->setSamples(antZ);
-
-
-
-    //vector
-   /* pvecx = ui->vectorX;
-    pvecx->setAxisAutoScale(QwtPlot::yLeft, false);
-    pvecx->setAxisScale(QwtPlot::yLeft, -5000, 5000, 1000);
-    pvecx->setAxisScale(QwtPlot::xBottom, 0, showSamplesCount, 100);
-
-    vecXCurve = new QwtPlotCurve();
-    pvecx->setTitle("magnetometer X Values");
-    vecXCurve->setPen(Qt::red, 1);
-    brush.setColor(Qt::red);
-    brush.setStyle(Qt::SolidPattern);
-    vecXCurve->setBrush(brush);
-    vecXCurve->attach(pvecx);
-    vecXCurve->setSamples(vecX);
-
-    pvecy = ui->vectorY;
-    pvecy->setAxisAutoScale(QwtPlot::yLeft, false);
-    pvecy->setAxisScale(QwtPlot::yLeft, -5000, 5000, 1000);
-    pvecy->setAxisScale(QwtPlot::xBottom, 0, showSamplesCount, 100);
-
-    vecYCurve = new QwtPlotCurve();
-    pvecy->setTitle("magnetometer Y Values");
-    vecYCurve->setPen(Qt::black, 1);
-    brush.setColor(Qt::black);
-    brush.setStyle(Qt::SolidPattern);
-    vecYCurve->setBrush(brush);
-    vecYCurve->attach(pvecy);
-    vecYCurve->setSamples(vecY);
-
-    pvecz = ui->vectorZ;
-    pvecz->setAxisAutoScale(QwtPlot::yLeft, false);
-    pvecz->setAxisScale(QwtPlot::yLeft, -5000, 5000, 1000);
-    pvecz->setAxisScale(QwtPlot::xBottom, 0, showSamplesCount, 100);
-
-    vecZCurve = new QwtPlotCurve();
-    pvecz->setTitle("magnetometer X Values");
-    vecZCurve->setPen(Qt::blue, 1);
-    brush.setColor(Qt::blue);
-    brush.setStyle(Qt::SolidPattern);
-    vecZCurve->setBrush(brush);
-    vecZCurve->attach(pvecz);
-    vecZCurve->setSamples(vecZ);*/
-
 
 }
 

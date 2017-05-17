@@ -38,4 +38,3 @@ FORMS    += mainwindow.ui
 INCLUDEPATH += $$quote(C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.10240.0\\um)
 INCLUDEPATH += $$quote(C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.10240.0\\shared)
 LIBS += -L$$quote(C:\Program Files (x86)\Windows Kits\10\Lib\10.0.10240.0\um\x86) -lBluetoothApis -lbthprops -lOle32
-
