@@ -204,14 +204,16 @@ void MainWindow::receiveReading(QVector<double> values)
             gyroCount++;
         }else{
             hitAntGyro.push_back(values.at(3));
-            qDebug() << hitAntGyro;
+            //qDebug() << hitAntGyro;
             hitAntGyro.removeFirst();
         }
-        if(gyroCount > 10){
+        if(gyroCount > 15){
             //FIND GREATEST AND LEAST VALUES HERE
-            qDebug() << hitAntGyro;
+            qDebug() << "gyro    " << hitAntGyro << "\n";
+            double temp = hitAntGyro.at(hitAntGyro.size()-1);
             hitAntGyro.clear();
-            hitAntGyro.push_front(0);
+            hitAntGyro.push_back(temp);
+            //hitAntGyro.push_front(0);
             gyroCount = 0;
             isGyro = false;
         }
@@ -482,11 +484,14 @@ void MainWindow::ready2read(){
                     //qDebug() << hitEncoder;
                     hitEncoder.removeFirst();
                 }
-                if(EncCount > 10){
+                if(EncCount > 15){
                     //FIND GREATEST VALUE HERE
-                    //qDebug() << hitEncoder;
+                    qDebug() << "encoder " << hitEncoder;
+                    double temp = hitEncoder.at(hitEncoder.size() - 1);
                     hitEncoder.clear();
-                    hitEncoder.push_front(0);
+                    hitEncoder.push_back(temp);
+
+                    //hitEncoder.push_front(0);
                     EncCount = 0;
                     isEnc = false;
                 }
